@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use axum::{
     extract::{Path, Query, State},
-    http::StatusCode,
+    http::{HeaderName, HeaderValue, StatusCode},
     response::{sse::Event, IntoResponse, Sse},
     routing::{get, post},
     Json, Router,
@@ -119,7 +119,7 @@ pub async fn connect_sse(
         state_clone.agents.write().await.remove(&agent_key);
     };
 
-    Sse::new(stream.map_err(|e| {
+    let sse_response = Sse::new(stream.map_err(|e| {
         error!("Failed to send SSE event: {}", e);
         anyhow!(e)
     }))
@@ -127,7 +127,16 @@ pub async fn connect_sse(
         axum::response::sse::KeepAlive::new()
             .interval(Duration::from_secs(15))
             .text("keep-alive-text"),
-    )
+    );
+
+    // Create response with X-Accel-Buffering header
+    let mut response = sse_response.into_response();
+    response.headers_mut().insert(
+        HeaderName::from_static("x-accel-buffering"),
+        HeaderValue::from_static("no"),
+    );
+
+    response
 }
 
 pub async fn list_agents(
