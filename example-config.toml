@@ -1,0 +1,92 @@
+# RPort Configuration File
+# =======================
+# Place this file at ~/.rport.toml for automatic loading
+# or specify custom path with --conf/-f parameter
+#
+# Configuration priority:
+# 1. Command line arguments (highest)
+# 2. Configuration file
+# 3. Default values (lowest)
+
+# Authentication token (REQUIRED)
+# This token must match between client, agent, and server
+# Can be overridden with --token argument or environment variable
+token = "your-auth-token-here"
+
+# ICE servers configuration for WebRTC NAT traversal
+# Multiple servers provide redundancy and improve connection success
+
+# Google STUN server (reliable, public)
+[[ice_servers]]
+urls = ["stun:stun.l.google.com:19302"]
+
+# Alternative STUN server (backup)
+[[ice_servers]]
+urls = ["stun:restsend.com:3478"]
+
+# Additional STUN servers for redundancy
+# [[ice_servers]]
+# urls = ["stun:stun1.l.google.com:19302"]
+
+# [[ice_servers]]
+# urls = ["stun:stun2.l.google.com:19302"]
+
+# TURN server configuration (for restrictive networks)
+# TURN servers relay traffic when direct P2P connection fails
+# Required in corporate networks with strict firewall policies
+# [[ice_servers]]
+# urls = ["turn:your-turn-server.com:3478"]
+# username = "your-username"
+# password = "your-password"
+# credential_type = "password"
+
+# Secure TURN server with TLS
+# [[ice_servers]]
+# urls = ["turns:secure-turn.example.com:5349"]
+# username = "secure-user"
+# password = "secure-password"
+# credential_type = "password"
+
+# Multiple TURN servers for high availability
+# [[ice_servers]]
+# urls = ["turn:turn1.company.com:3478", "turn:turn2.company.com:3478"]
+# username = "company-user"
+# password = "company-password"
+
+# Configuration Examples:
+# =======================
+#
+# Home/Small Office Setup:
+# - Use STUN servers only (NAT traversal usually works)
+# - Single token for all devices
+#
+# Corporate Network:
+# - Add TURN servers for reliable connectivity
+# - Use strong authentication tokens
+# - Consider firewall rules for WebRTC traffic
+#
+# Production Environment:
+# - Multiple ICE servers for redundancy
+# - Secure token management (environment variables)
+# - Monitoring and logging configuration
+#
+# Development/Testing:
+# - Simple STUN configuration
+# - Easy-to-remember tokens
+# - Local server instances
+
+# Security Notes:
+# ===============
+# 1. Set file permissions: chmod 600 ~/.rport.toml
+# 2. Use strong, unique tokens (generate with: openssl rand -hex 32)
+# 3. Rotate tokens regularly in production
+# 4. Store sensitive tokens in environment variables for CI/CD
+# 5. Use TURNS (TLS) instead of TURN in production networks
+# 6. Monitor connection logs for unauthorized access attempts
+
+# Performance Tuning:
+# ===================
+# - Use geographically close ICE servers for better latency
+# - Configure multiple STUN servers for redundancy
+# - TURN servers add latency but improve reliability
+# - Test connectivity from target network environments
