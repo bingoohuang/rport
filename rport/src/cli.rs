@@ -10,7 +10,7 @@ pub struct Cli {
     pub config: Option<PathBuf>,
     /// Server URL
     #[arg(short, long, default_value = "http://127.0.0.1:3000")]
-    pub server: String,
+    pub server: Option<String>,
     /// Authentication token
     #[arg(short = 'k', long)]
     pub token: Option<String>,

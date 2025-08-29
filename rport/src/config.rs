@@ -33,6 +33,8 @@ impl From<IceServerConfig> for RTCIceServer {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct RportConfig {
+    pub id: Option<String>,
+    pub server: Option<String>,
     pub token: Option<String>,
     pub ice_servers: Option<Vec<IceServerConfig>>,
 }
@@ -40,6 +42,8 @@ pub struct RportConfig {
 impl Default for RportConfig {
     fn default() -> Self {
         Self {
+            id: None,
+            server: None,
             token: None,
             ice_servers: Some(vec![IceServerConfig::default()]),
         }
@@ -64,9 +68,20 @@ impl RportConfig {
         Self::load_from_file(&config_path)
     }
 
-    pub fn merge_with_cli(&mut self, cli_token: Option<String>) {
+    pub fn merge_with_cli(
+        &mut self,
+        cli_token: Option<String>,
+        cli_server: Option<String>,
+        cli_id: Option<String>,
+    ) {
         if let Some(token) = cli_token {
             self.token = Some(token);
+        }
+        if let Some(server) = cli_server {
+            self.server = Some(server);
+        }
+        if let Some(id) = cli_id {
+            self.id = Some(id);
         }
     }
 
@@ -75,9 +90,5 @@ impl RportConfig {
             Some(servers) => servers.iter().map(|s| s.clone().into()).collect(),
             None => vec![IceServerConfig::default().into()],
         }
-    }
-
-    pub fn get_token(&self) -> Option<String> {
-        self.token.clone()
     }
 }

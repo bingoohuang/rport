@@ -37,18 +37,18 @@ RPort is a modern, WebRTC-based remote port forwarding tool written in Rust. It 
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/restsend/rport.git
 cd rport
 
 # Build all components
-cargo build --release
+cargo build -r --target x86_64-unknown-linux-musl
 ```
 
 ### 2. Start the Server
 
 ```bash
 # Start the coordination server
-./target/release/rport-server --addr 0.0.0.0:3000
+./target/x86_64-unknown-linux-musl/release/rport-server --addr 0.0.0.0:3000
 ```
 
 ### 3. Configure and Run Agent
@@ -67,17 +67,17 @@ Start the agent on the remote machine:
 
 ```bash
 # Run as daemon with custom log file
-./target/release/rport --target 22 --id my-server --daemon --log-file /var/log/rport-agent.log
+./target/x86_64-unknown-linux-musl/release/rport --target 22 --id my-server --daemon --log-file /var/log/rport-agent.log
 
 # Or run in foreground for testing
-./target/release/rport --target 22 --id my-server --token your-auth-token
+./target/x86_64-unknown-linux-musl/release/rport --target 22 --id my-server --token your-auth-token
 ```
 
 ### 4. Connect from Client
 
 ```bash
 # Forward local port 8080 to remote SSH (port 22)
-./target/release/rport --port 8080 --id my-server --token your-auth-token
+./target/x86_64-unknown-linux-musl/release/rport --port 8080 --id my-server --token your-auth-token
 
 # Now you can SSH through the tunnel
 ssh user@localhost -p 8080

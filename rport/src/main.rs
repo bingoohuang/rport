@@ -59,11 +59,14 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
     };
 
     // Merge CLI token with config
-    config.merge_with_cli(cli.token.clone());
+    config.merge_with_cli(cli.token.clone(), cli.server.clone(), cli.id.clone());
 
     // Get the final token
-    let token = config.get_token().ok_or_else(|| {
+    let token = config.token.clone().ok_or_else(|| {
         anyhow::anyhow!("Token is required. Provide it via --token or in config file")
+    })?;
+    let server = config.server.clone().ok_or_else(|| {
+        anyhow::anyhow!("Server is required. Provide it via --server or in config file")
     })?;
 
     // Create WebRTC configuration
@@ -73,12 +76,12 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
     // In daemon mode, logs will be written to the log file
     use tracing_subscriber::{self, filter::EnvFilter};
     tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::new("rport=debug"))
+        .with_env_filter(EnvFilter::new("rport=info,turn=warn,webrtc=warn"))
         .init();
 
     // Determine mode based on arguments
     if cli.list {
-        let client = CliClient::new(cli.server, token, webrtc_config);
+        let client = CliClient::new(server, token, webrtc_config);
         let agents = client.list_agents().await?;
         println!("Available agents:");
         for agent in agents {
@@ -90,20 +93,20 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
         let agent_id = cli
             .id
             .unwrap_or_else(|| format!("agent-{}", std::process::id()));
-        let agent = Agent::new(cli.server, token, agent_id, host, port, webrtc_config);
+        let agent = Agent::new(server, token, agent_id, host, port, webrtc_config);
         agent.run().await?;
     } else if let Some(local_port) = cli.port {
         // CLI port forwarding mode
         let agent_id = cli.id.ok_or_else(|| {
             anyhow::anyhow!("Agent ID is required for port forwarding mode. Use --id <AGENT_ID>")
         })?;
-        let client = CliClient::new(cli.server, token, webrtc_config);
+        let client = CliClient::new(server, token, webrtc_config);
         client.connect_port_forward(agent_id, local_port).await?;
     } else {
         let agent_id = cli.id.ok_or_else(|| {
             anyhow::anyhow!("Agent ID is required for port forwarding mode. Use --id <AGENT_ID>")
         })?;
-        let client = CliClient::new(cli.server, token, webrtc_config);
+        let client = CliClient::new(server, token, webrtc_config);
         client.connect_proxy_command(agent_id).await?;
     }
 
