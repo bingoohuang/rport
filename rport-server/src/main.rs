@@ -40,23 +40,10 @@ async fn main() -> anyhow::Result<()> {
     };
 
     let public_ip = cli.public_ip.clone();
-    let turn_addr = match cli
+    let turn_addr = cli
         .turn_addr
         .unwrap_or_else(|| format!("{}:13478", ip))
-        .parse::<SocketAddr>()
-    {
-        Ok(addr) => {
-            if addr.ip().is_unspecified() {
-                SocketAddr::new(ip, addr.port())
-            } else {
-                addr
-            }
-        }
-        Err(_) => {
-            eprintln!("Invalid TURN address format. Using default.");
-            SocketAddr::new(ip, 3478)
-        }
-    };
+        .parse::<SocketAddr>()?;
     let turn_server = Arc::new(TurnServer::new(cli.disable_turn, turn_addr, public_ip).await?);
     turn_server.start().await.ok();
 
