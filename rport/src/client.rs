@@ -14,6 +14,7 @@ use webrtc::peer_connection::peer_connection_state::RTCPeerConnectionState;
 use webrtc::peer_connection::sdp::session_description::RTCSessionDescription;
 use webrtc::peer_connection::RTCPeerConnection;
 
+use crate::config::IceServerConfig;
 use crate::sdp_utils::strip_ipv6_candidates;
 use crate::webrtc_config::WebRTCConfig;
 
@@ -25,32 +26,22 @@ pub struct CliClient {
 }
 
 impl CliClient {
-    pub fn new(server_url: String, token: String, webrtc_config: WebRTCConfig) -> Self {
+    pub fn new(
+        server_url: String,
+        token: String,
+        ice_servers: Option<Vec<IceServerConfig>>,
+    ) -> Self {
+        let webrtc_config = WebRTCConfig::new(
+            server_url.clone(),
+            token.clone(),
+            ice_servers.unwrap_or_default(),
+        );
         Self {
             server_url,
             token,
             client: Client::new(),
             webrtc_config,
         }
-    }
-
-    pub async fn list_agents(&self) -> Result<Vec<String>> {
-        let url = format!("{}/rport/list?token={}", self.server_url, self.token);
-        let response = self.client.get(&url).send().await?;
-
-        if !response.status().is_success() {
-            return Err(anyhow!("Failed to list agents: {}", response.status()));
-        }
-
-        let body: Value = response.json().await?;
-        let agents = body["agents"]
-            .as_array()
-            .ok_or_else(|| anyhow!("Invalid response format"))?;
-
-        Ok(agents
-            .iter()
-            .filter_map(|v| v.as_str().map(|s| s.to_string()))
-            .collect())
     }
 
     pub async fn connect_proxy_command(&self, agent_id: String) -> Result<()> {
@@ -291,7 +282,6 @@ impl CliClient {
             .recv()
             .await;
 
-        info!("Client ICE candidate gathering done...");
         let offer = peer_connection
             .local_description()
             .await
@@ -300,6 +290,10 @@ impl CliClient {
         // Strip IPv6 candidates from offer
         let filtered_offer_sdp = strip_ipv6_candidates(&offer.sdp);
 
+        info!(
+            offer = filtered_offer_sdp,
+            "Client ICE candidate gathering done..."
+        );
         // Send offer to server
         let offer_msg = OfferMessage {
             id: agent_id.to_string(),

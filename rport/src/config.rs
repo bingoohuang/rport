@@ -1,5 +1,4 @@
 use anyhow::{anyhow, Result};
-use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use webrtc::ice_transport::ice_server::RTCIceServer;
@@ -8,7 +7,7 @@ use webrtc::ice_transport::ice_server::RTCIceServer;
 pub struct IceServerConfig {
     pub urls: Vec<String>,
     pub username: Option<String>,
-    pub password: Option<String>,
+    pub credential: Option<String>,
 }
 
 impl Default for IceServerConfig {
@@ -16,7 +15,7 @@ impl Default for IceServerConfig {
         Self {
             urls: vec!["stun:restsend.com:3478".to_string()],
             username: None,
-            password: None,
+            credential: None,
         }
     }
 }
@@ -26,7 +25,7 @@ impl From<IceServerConfig> for RTCIceServer {
         RTCIceServer {
             urls: config.urls,
             username: config.username.unwrap_or_default(),
-            credential: config.password.unwrap_or_default(),
+            credential: config.credential.unwrap_or_default(),
             ..Default::default()
         }
     }
@@ -46,7 +45,7 @@ impl Default for RportConfig {
             id: None,
             server: None,
             token: None,
-            ice_servers: Some(vec![IceServerConfig::default()]),
+            ice_servers: None,
         }
     }
 }
@@ -83,32 +82,6 @@ impl RportConfig {
         }
         if let Some(id) = cli_id {
             self.id = Some(id);
-        }
-    }
-
-    pub async fn get_ice_servers(&self) -> Vec<RTCIceServer> {
-        if let Some(ice_servers) = &self.ice_servers {
-            ice_servers.iter().map(|s| s.clone().into()).collect()
-        } else {
-            let url = format!(
-                "{}/rport/iceservers?token={}",
-                self.server.as_deref().unwrap_or(""),
-                self.token.as_deref().unwrap_or("")
-            );
-            let response = match Client::new().get(&url).send().await {
-                Ok(resp) => resp,
-                Err(_) => {
-                    return vec![IceServerConfig::default().into()];
-                }
-            };
-
-            if !response.status().is_success() {
-                return vec![IceServerConfig::default().into()];
-            }
-            response
-                .json()
-                .await
-                .unwrap_or_else(|_| vec![IceServerConfig::default().into()])
         }
     }
 }

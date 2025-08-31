@@ -14,8 +14,9 @@ use webrtc::data_channel::RTCDataChannel;
 use webrtc::peer_connection::sdp::session_description::RTCSessionDescription;
 use webrtc::peer_connection::RTCPeerConnection;
 
-use crate::webrtc_config::WebRTCConfig;
+use crate::config::IceServerConfig;
 use crate::sdp_utils::strip_ipv6_candidates;
+use crate::webrtc_config::WebRTCConfig;
 
 #[allow(dead_code)]
 struct ConnectionSession {
@@ -41,8 +42,13 @@ impl Agent {
         id: String,
         target_host: String,
         target_port: u16,
-        webrtc_config: WebRTCConfig,
+        ice_servers: Option<Vec<IceServerConfig>>,
     ) -> Self {
+        let webrtc_config = WebRTCConfig::new(
+            server_url.clone(),
+            token.clone(),
+            ice_servers.unwrap_or_default(),
+        );
         Self {
             server_url,
             token,

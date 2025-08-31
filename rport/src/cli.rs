@@ -17,9 +17,6 @@ pub struct Cli {
     /// Agent ID (required for ProxyCommand and port forwarding modes)
     #[arg(short, long)]
     pub id: Option<String>,
-    /// List available agents
-    #[arg(short, long)]
-    pub list: bool,
     /// Target address for agent mode (e.g., 127.0.0.1:22 or just 22)
     #[arg(short = 't', long)]
     pub target: Option<String>,
