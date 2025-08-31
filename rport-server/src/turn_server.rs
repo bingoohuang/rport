@@ -84,7 +84,7 @@ impl TurnServer {
             }],
             realm: "rport.turn".to_owned(),
             auth_handler: Arc::new(auth_handler),
-            channel_bind_timeout: Duration::from_secs(60), // 1 minutes
+            channel_bind_timeout: Duration::from_secs(600), // 1 minutes
             alloc_close_notify: None,
         };
 
