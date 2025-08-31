@@ -70,7 +70,7 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
     })?;
 
     // Create WebRTC configuration
-    let webrtc_config = WebRTCConfig::new(config.get_ice_servers());
+    let webrtc_config = WebRTCConfig::new(config.get_ice_servers().await);
 
     // Initialize tracing
     // In daemon mode, logs will be written to the log file

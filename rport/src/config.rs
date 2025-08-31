@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use webrtc::ice_transport::ice_server::RTCIceServer;
@@ -85,10 +86,29 @@ impl RportConfig {
         }
     }
 
-    pub fn get_ice_servers(&self) -> Vec<RTCIceServer> {
-        match &self.ice_servers {
-            Some(servers) => servers.iter().map(|s| s.clone().into()).collect(),
-            None => vec![IceServerConfig::default().into()],
+    pub async fn get_ice_servers(&self) -> Vec<RTCIceServer> {
+        if let Some(ice_servers) = &self.ice_servers {
+            ice_servers.iter().map(|s| s.clone().into()).collect()
+        } else {
+            let url = format!(
+                "{}/rport/iceservers?token={}",
+                self.server.as_deref().unwrap_or(""),
+                self.token.as_deref().unwrap_or("")
+            );
+            let response = match Client::new().get(&url).send().await {
+                Ok(resp) => resp,
+                Err(_) => {
+                    return vec![IceServerConfig::default().into()];
+                }
+            };
+
+            if !response.status().is_success() {
+                return vec![IceServerConfig::default().into()];
+            }
+            response
+                .json()
+                .await
+                .unwrap_or_else(|_| vec![IceServerConfig::default().into()])
         }
     }
 }

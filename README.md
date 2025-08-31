@@ -12,6 +12,7 @@ RPort is a modern, WebRTC-based remote port forwarding tool written in Rust. It 
 - 🔄 **Background daemon support** - Run as a system daemon with custom log files
 - 📊 **Structured logging** - Comprehensive logging with tracing support
 - ⚡ **High performance** - Built with Tokio async runtime
+- 🛜 **Built-in TURN server** - No need for third-party TURN servers
 
 ## Architecture
 
@@ -41,6 +42,8 @@ git clone https://github.com/restsend/rport.git
 cd rport
 
 # Build all components
+cargo build
+# Build with x86_64-unknown-linux-musl
 cargo build -r --target x86_64-unknown-linux-musl
 ```
 
@@ -48,7 +51,7 @@ cargo build -r --target x86_64-unknown-linux-musl
 
 ```bash
 # Start the coordination server
-./target/x86_64-unknown-linux-musl/release/rport-server --addr 0.0.0.0:3000
+./target/release/rport-server --addr 0.0.0.0:3000
 ```
 
 ### 3. Configure and Run Agent
@@ -67,17 +70,17 @@ Start the agent on the remote machine:
 
 ```bash
 # Run as daemon with custom log file
-./target/x86_64-unknown-linux-musl/release/rport --target 22 --id my-server --daemon --log-file /var/log/rport-agent.log
+./target/release/rport --target 22 --id my-server --daemon --log-file /var/log/rport-agent.log
 
 # Or run in foreground for testing
-./target/x86_64-unknown-linux-musl/release/rport --target 22 --id my-server --token your-auth-token
+./target/release/rport --target 22 --id my-server --token your-auth-token
 ```
 
 ### 4. Connect from Client
 
 ```bash
 # Forward local port 8080 to remote SSH (port 22)
-./target/x86_64-unknown-linux-musl/release/rport --port 8080 --id my-server --token your-auth-token
+./target/release/rport --port 8080 --id my-server --token your-auth-token
 
 # Now you can SSH through the tunnel
 ssh user@localhost -p 8080
@@ -103,26 +106,17 @@ Place your configuration at `~/.rport.toml`:
 token = "your-secure-token-here"
 
 # ICE servers for WebRTC NAT traversal
-# Multiple STUN servers for redundancy
+# Built-in TURN server provides NAT traversal automatically
+# Additional STUN servers for redundancy
 [[ice_servers]]
 urls = ["stun:stun.l.google.com:19302"]
 
 [[ice_servers]]
 urls = ["stun:restsend.com:3478"]
 
-# TURN server example (for restrictive networks)
-# Uncomment and configure for corporate networks
-# [[ice_servers]]
-# urls = ["turn:your-turn-server.com:3478"]
-# username = "your-username"
-# password = "your-password"
-
-# Advanced ICE server configuration with authentication
-# [[ice_servers]]
-# urls = ["turns:secure-turn.example.com:5349"]
-# username = "user123"
-# password = "pass456"
-# credential_type = "password"
+# Note: RPort now includes a built-in TURN server
+# No additional TURN server configuration is required
+# The built-in TURN server automatically handles NAT traversal
 ```
 
 #### Configuration File Management
@@ -237,12 +231,6 @@ Options:
 # Connect to localhost:5432 with your database client
 ```
 
-### List Available Agents
-
-```bash
-./rport --list --token your-auth-token
-```
-
 ## Advanced SSH Integration
 
 ### SSH ProxyCommand Usage
@@ -322,9 +310,10 @@ tail -f /var/log/rport/agent.log
 ### Common Issues
 
 1. **Connection fails through NAT:**
-   - Add TURN servers to your configuration
-   - Check firewall settings
+   - The built-in TURN server should handle most NAT scenarios automatically
+   - Check firewall settings for UDP traffic
    - Verify ICE server connectivity
+   - Ensure the server is accessible from both client and agent
 
 2. **Token authentication errors:**
    - Ensure token matches between client and agent
@@ -358,10 +347,11 @@ RUST_LOG=rport=debug ./rport --target 22 --id debug-agent
 ## Security Considerations
 
 - Use strong authentication tokens
-- Configure TURN servers with authentication for production
+- The built-in TURN server provides secure NAT traversal without additional configuration
 - Monitor log files for suspicious activity
 - Run agents with minimal required privileges
 - Use configuration files with appropriate file permissions (600)
+- Agent listing functionality has been removed to prevent information disclosure
 
 ## Support
 
