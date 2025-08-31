@@ -20,6 +20,7 @@ pub struct TurnCredentials {
 }
 /// Simple TURN server with temporary authentication
 pub struct TurnServer {
+    pub auth_duration: Duration,
     pub disabled: bool,
     listen_addr: SocketAddr,
     public_ip: Option<String>,
@@ -35,6 +36,7 @@ impl TurnServer {
     ) -> Result<Self> {
         let secret = format!("{}", rand::random::<u64>());
         Ok(Self {
+            auth_duration: Duration::from_secs(3600),
             disabled,
             listen_addr,
             public_ip,
@@ -82,7 +84,7 @@ impl TurnServer {
             }],
             realm: "rport.turn".to_owned(),
             auth_handler: Arc::new(auth_handler),
-            channel_bind_timeout: Duration::from_secs(1800), // 30 minutes
+            channel_bind_timeout: Duration::from_secs(60), // 1 minutes
             alloc_close_notify: None,
         };
 
@@ -100,9 +102,9 @@ impl TurnServer {
             return None;
         }
 
-        let duration = Duration::from_secs(60);
         let cred =
-            turn::auth::generate_long_term_credentials(self.secret.as_str(), duration).ok()?;
+            turn::auth::generate_long_term_credentials(self.secret.as_str(), self.auth_duration)
+                .ok()?;
 
         let credentials = TurnCredentials {
             username: cred.0.clone(),
