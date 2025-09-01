@@ -249,28 +249,6 @@ impl CliClient {
         let data_channel = peer_connection
             .create_data_channel("port-forward", Some(data_channel_config))
             .await?;
-
-        info!("Data channel created on client side");
-
-        // Add data channel state monitoring
-        data_channel.on_open(Box::new(move || {
-            Box::pin(async move {
-                info!("✅ Data channel opened on client side!");
-            })
-        }));
-
-        data_channel.on_close(Box::new(move || {
-            Box::pin(async move {
-                info!("❌ Data channel closed on client side!");
-            })
-        }));
-
-        data_channel.on_error(Box::new(move |err| {
-            Box::pin(async move {
-                error!("💥 Data channel error on client side: {:?}", err);
-            })
-        }));
-
         // Create offer
         let offer = peer_connection.create_offer(None).await?;
         peer_connection.set_local_description(offer.clone()).await?;
@@ -289,11 +267,6 @@ impl CliClient {
 
         // Strip IPv6 candidates from offer
         let filtered_offer_sdp = strip_ipv6_candidates(&offer.sdp);
-
-        info!(
-            offer = filtered_offer_sdp,
-            "Client ICE candidate gathering done..."
-        );
         // Send offer to server
         let offer_msg = OfferMessage {
             id: agent_id.to_string(),
@@ -433,7 +406,6 @@ impl CliClient {
         data_channel.on_open(Box::new(move || {
             let tx = Arc::clone(&tx_clone);
             Box::pin(async move {
-                info!("Data channel opened on client side!");
                 if let Some(sender) = tx.lock().await.take() {
                     let _ = sender.send(());
                 }

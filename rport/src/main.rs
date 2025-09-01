@@ -72,7 +72,9 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
     // In daemon mode, logs will be written to the log file
     use tracing_subscriber::{self, filter::EnvFilter};
     tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::new("rport=info,turn=warn,webrtc=warn"))
+        .with_env_filter(EnvFilter::new(
+            "rport=info,turn=warn,webrtc=warn,webrtc_ice=error",
+        ))
         .init();
 
     if let Some(target) = config.target {

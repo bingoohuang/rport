@@ -57,7 +57,6 @@ impl WebRTCConfig {
             ice_servers: self.get_ice_servers().await,
             ..Default::default()
         };
-        tracing::info!("Using ICE servers: {:?}", config.ice_servers);
         let peer_connection = Arc::new(api.new_peer_connection(config).await?);
         Ok(peer_connection)
     }
