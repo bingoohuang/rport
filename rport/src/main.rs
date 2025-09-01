@@ -58,7 +58,7 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
     };
 
     // Merge CLI token with config
-    config.merge_with_cli(cli.token.clone(), cli.server.clone(), cli.id.clone());
+    config.merge_with_cli(cli);
 
     // Get the final token
     let token = config.token.clone().ok_or_else(|| {
@@ -75,7 +75,7 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
         .with_env_filter(EnvFilter::new("rport=info,turn=warn,webrtc=warn"))
         .init();
 
-    if let Some(target) = cli.target {
+    if let Some(target) = config.target {
         // Agent mode
         let (host, port) = parse_target(&target)?;
         let agent_id = config
@@ -90,7 +90,7 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
             config.ice_servers.clone(),
         );
         agent.run().await?;
-    } else if let Some(local_port) = cli.port {
+    } else if let Some(local_port) = config.port {
         // CLI port forwarding mode
         let agent_id = config.id.ok_or_else(|| {
             anyhow::anyhow!("Agent ID is required for port forwarding mode. Use --id <AGENT_ID>")
