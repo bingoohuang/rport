@@ -62,30 +62,9 @@ impl Agent {
 
     pub async fn run(&self) -> Result<()> {
         info!(
-            "Starting agent: {} on {}:{}",
-            self.id, self.target_host, self.target_port
+            server = self.server_url,
+            "Starting agent: {} on {}:{}", self.id, self.target_host, self.target_port
         );
-        info!("Connecting to server: {}", self.server_url);
-        info!(
-            "Will forward connections to {}:{}",
-            self.target_host, self.target_port
-        );
-
-        // Verify the target port is accessible (but don't require it to be ready)
-        match TcpStream::connect(format!("{}:{}", self.target_host, self.target_port)).await {
-            Ok(_) => {
-                info!(
-                    "✅ Successfully connected to {}:{}",
-                    self.target_host, self.target_port
-                );
-            }
-            Err(e) => {
-                warn!(
-                    "⚠️  Could not connect to {}:{}: {}. Service may not be running yet.",
-                    self.target_host, self.target_port, e
-                );
-            }
-        }
 
         loop {
             match self.register_and_listen().await {
@@ -107,8 +86,7 @@ impl Agent {
             "{}/rport/connect?token={}&id={}",
             self.server_url, self.token, self.id
         );
-        info!("Connecting to: {}", url);
-
+        info!("Connecting to: {}", self.server_url);
         // Use SSE connection instead of WebSocket
         let response = self.client.get(&url).send().await?;
 
