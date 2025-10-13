@@ -8,7 +8,7 @@ pub struct Cli {
     /// Configuration file path
     #[arg(short = 'f', long = "conf")]
     pub config: Option<PathBuf>,
-    /// Server URL
+    /// Server URL, e.g. http://127.0.0.1:3000
     #[arg(short, long)]
     pub server: Option<String>,
     /// Authentication token

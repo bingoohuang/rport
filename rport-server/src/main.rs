@@ -8,6 +8,8 @@ use std::{
 };
 use tracing_subscriber::{self, filter::EnvFilter};
 mod cli;
+#[cfg(unix)]
+mod daemon;
 
 pub fn get_first_non_loopback_interface() -> Result<IpAddr> {
     for i in get_if_addrs::get_if_addrs()? {
@@ -20,9 +22,36 @@ pub fn get_first_non_loopback_interface() -> Result<IpAddr> {
     }
     Err(anyhow::anyhow!("No IPV4 interface found"))
 }
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
+
+fn main() -> anyhow::Result<()> {
     let cli = ServerCli::parse();
+
+    // Handle daemon mode before doing anything else, including tokio runtime
+    if cli.daemon {
+        #[cfg(unix)]
+        {
+            // Use specified log file or default to /tmp/rport-server.log
+            let log_file = cli
+                .log_file
+                .as_ref()
+                .map(|p| p.to_string_lossy().to_string())
+                .unwrap_or_else(|| "/tmp/rport-server.log".to_string());
+            daemon::daemonize_with_log(&log_file)?;
+        }
+        #[cfg(not(unix))]
+        {
+            return Err(anyhow::anyhow!(
+                "Daemon mode is only supported on Unix systems"
+            ));
+        }
+    }
+
+    // Start tokio runtime after daemon is initialized
+    tokio::runtime::Runtime::new()?.block_on(async_main(cli))
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn async_main(cli: ServerCli) -> anyhow::Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::new("rport=info,turn=warn,webrtc=warn"))
         .init();

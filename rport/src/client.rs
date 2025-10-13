@@ -10,6 +10,7 @@ use tokio::net::{TcpListener, TcpStream};
 use tracing::{error, info};
 use webrtc::data_channel::data_channel_init::RTCDataChannelInit;
 use webrtc::data_channel::RTCDataChannel;
+use webrtc::ice::candidate::CandidateType;
 use webrtc::peer_connection::peer_connection_state::RTCPeerConnectionState;
 use webrtc::peer_connection::sdp::session_description::RTCSessionDescription;
 use webrtc::peer_connection::RTCPeerConnection;
@@ -156,7 +157,48 @@ impl CliClient {
             .await?;
         self.wait_for_data_channel_open(&data_channel).await?;
 
-        info!("WebRTC connection established for TCP client");
+        let ice_connection_state = peer_connection.ice_connection_state();
+        let _state_str = format!("{:?}", ice_connection_state);
+
+        // Check if connection is using relay
+        let stats = peer_connection.get_stats().await;
+        let mut is_relay = false;
+
+        for (_, report) in stats.reports.iter() {
+            match report {
+                webrtc::stats::StatsReportType::CandidatePair(pair) => {
+                    if pair.nominated {
+                        // This is the selected candidate pair
+                        info!("Selected candidate pair - local: {}, remote: {}",
+                            pair.local_candidate_id, pair.remote_candidate_id);
+
+                        // Check if either local or remote candidate type indicates relay
+                        if let Some(webrtc::stats::StatsReportType::LocalCandidate(local)) =
+                            stats.reports.get(&pair.local_candidate_id) {
+                            info!("Local candidate type: {:?}", local.candidate_type);
+                            if local.candidate_type == CandidateType::Relay {
+                                is_relay = true;
+                            }
+                        }
+                        if let Some(webrtc::stats::StatsReportType::RemoteCandidate(remote)) =
+                            stats.reports.get(&pair.remote_candidate_id) {
+                            info!("Remote candidate type: {:?}", remote.candidate_type);
+                            if remote.candidate_type == CandidateType::Relay {
+                                is_relay = true;
+                            }
+                        }
+                        break;
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        if is_relay {
+            info!("WebRTC connection established for TCP client (via TURN relay server)");
+        } else {
+            info!("WebRTC connection established for TCP client (direct P2P connection)");
+        }
 
         // Split the TCP stream
         let (mut tcp_read, mut tcp_write) = tcp_stream.into_split();

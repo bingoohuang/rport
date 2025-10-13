@@ -93,6 +93,7 @@ impl Agent {
         if !response.status().is_success() {
             return Err(anyhow!("Failed to connect: {}", response.status()));
         }
+        info!("Connected to: {}", self.server_url);
 
         let mut stream = response.bytes_stream();
         let last_ping = tokio::sync::Mutex::new(tokio::time::Instant::now());

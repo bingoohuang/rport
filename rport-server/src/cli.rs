@@ -1,4 +1,5 @@
 use clap::Parser;
+use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(name = "rport-server")]
@@ -18,4 +19,12 @@ pub struct ServerCli {
     /// Public IP address for TURN server
     #[arg(long)]
     pub public_ip: Option<String>,
+
+    /// Run as daemon (detach from terminal)
+    #[arg(short = 'd', long)]
+    pub daemon: bool,
+
+    /// Log file path for daemon mode
+    #[arg(long = "log-file")]
+    pub log_file: Option<PathBuf>,
 }
